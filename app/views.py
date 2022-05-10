@@ -1,15 +1,25 @@
+from http.client import responses
+import json
+from telnetlib import STATUS
 from urllib import response
+from warnings import filters
+from django.http import JsonResponse
 from django.shortcuts import render
+from requests import request
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from django.core import serializers
 from rest_framework.status import *
 from rest_framework.generics import *
 from rest_framework.permissions import *
 from rest_framework.authentication import *
-from app.serializers import FileSerializer, UserSerializer
-from django.contrib.auth import authenticate, login, logout
+from rest_framework.decorators import api_view
+from rest_framework.filters import *
+from app.serializers import FileSerializer, ListSerializer, StudentSerializer, UserSerializer
+from django.contrib.auth import authenticate, login
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
+from .analysis import OverviewAnalysis, genderHistoAnalysis, fileDetails, healthHistoAnalysis, normal_correlation, teacherHistoAnalysis
 from .models import *
 import jwt
 
@@ -45,7 +55,6 @@ class CreateUserAPIView(CreateAPIView):
 
 # Create your views here.
 class UserView(APIView):
-
     serializer_class = UserSerializer
 
     def get(self, request):
@@ -55,7 +64,6 @@ class UserView(APIView):
         })
 
     def post(self, request):
-
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             serializer.save()
@@ -70,3 +78,62 @@ class GFileUploadAPIView(CreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save()
+
+
+class ListFilesAPIView(ListAPIView):
+    """list of all files"""
+    queryset = File.objects.all()
+    serializer_class = FileSerializer
+    filter_backends = [SearchFilter, OrderingFilter]
+    search_fields = ['File_name']
+
+
+class fileDetailAPIView(RetrieveUpdateDestroyAPIView):
+    authentication_classes = [TokenAuthentication]
+    # permission_classes = [IsOrderOwnerOrReadOnly]
+    queryset = File.objects.all()
+    serializer_class = FileSerializer
+    lookup_field = 'id'
+    lookup_url_kwarg = 'pk'
+
+
+@api_view(('GET',))
+def fileDetail(request, pk):
+    file = File.objects.get(id=pk)
+    return JsonResponse(fileDetails(file.Actual_file), status=200)
+
+
+@api_view(['POST'])
+def correlationResult(request, pk):
+    print(request.data)
+    file = File.objects.get(id=pk)
+    course = request.data['course']
+    factor = request.data['factor']
+    return Response(data=normal_correlation(file.Actual_file, course, factor), status=HTTP_200_OK)
+
+
+class ListStudentsAPIView(ListAPIView):
+    """list of all student"""
+    queryset = Student.objects.all()
+    serializer_class = StudentSerializer
+    filter_backends = [SearchFilter, OrderingFilter]
+    search_fields = ['fname']
+
+
+def reportLatestFileOverview(request):
+    lastFile = File.objects.all().last()
+    return JsonResponse(OverviewAnalysis(lastFile.Actual_file), status=200)
+
+
+def genderHistogram(request):
+    lastFile = File.objects.all().last()
+    return JsonResponse({'data':genderHistoAnalysis(lastFile.Actual_file)}, status=200)
+
+def teacherHistogram(request):
+    lastFile = File.objects.all().last()
+    return JsonResponse(teacherHistoAnalysis(lastFile.Actual_file), status=200)
+
+def healthHistogram(request):
+    lastFile = File.objects.all().last()
+    data=healthHistoAnalysis(lastFile.Actual_file)
+    return JsonResponse({'data':data}, status=200)

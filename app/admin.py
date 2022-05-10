@@ -4,7 +4,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import File
+from .models import BackgroundStudy, Course, CourseGroup, File, Registration, Student, Teacher
 User = get_user_model()
 
 # Remove Group Model from admin. We're not using it.
@@ -19,8 +19,7 @@ class UserAdmin(BaseUserAdmin):
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
         ('Personal info', {'fields': ('fullname',)}),
-        ('Permissions', {'fields': ('staff','admin','is_active','trustworthy')}),
-        ('Images', {'fields': ('image',)}),
+        ('Permissions', {'fields': ('staff','admin','is_active')}),
     )
     # add_fieldsets is not a standard ModelAdmin attribute. UserAdmin
     # overrides get_fieldsets to use this attribute when creating a user.
@@ -36,5 +35,26 @@ class UserAdmin(BaseUserAdmin):
 
 
 admin.site.register(User, UserAdmin)
-
 admin.site.register(File)
+admin.site.register(Student)
+
+class BackgAdmin(admin.ModelAdmin):
+    list_display = ('id','major', 'school')
+
+# Register the admin class with the associated model
+admin.site.register(BackgroundStudy, BackgAdmin)
+
+admin.site.register(Course)
+class CourseGAdmin(admin.ModelAdmin):
+    list_display = ('groupname', 'course','teacher')
+
+# Register the admin class with the associated model
+admin.site.register(CourseGroup, CourseGAdmin)
+
+admin.site.register(Teacher)
+
+class RegistrationAdmin(admin.ModelAdmin):
+    list_display = ('student', 'courseGroup')
+
+# Register the admin class with the associated model
+admin.site.register(Registration, RegistrationAdmin)
