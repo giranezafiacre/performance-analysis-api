@@ -54,7 +54,8 @@ def normal_correlation(file, course, factor):
     program = []
     dataset = pd.read_csv(file)
     ids = list(dataset['Id'])
-
+    
+    marksDict=[]
     if(factor == '0'):  # teachers choice
         for i in ids:
             courseId = Course.objects.filter(name=course)[0]
@@ -66,44 +67,69 @@ def normal_correlation(file, course, factor):
             teacherId = coursegroup.teacher
             teacher = Teacher.objects.get(id=teacherId.id)
             teachers.append(teacher.id)
-
+            marksDict.append([list(dataset[course])[ids.index(i)],teacher.id])
+        
         x = pd.Series(list(dataset[course]))
-        y = pd.Series(teachers)
-        return x.corr(y)
+        y = pd.Series(background)
+        return {
+            'correlation_result':x.corr(y),
+            'marks_factors':marksDict
+        }
 
     if(factor == '1'):  # backgrounds choice
         for i in ids:
             student = Student.objects.get(id=i)
             backId = student.backId
             background.append(backId.id)
+            marksDict.append([list(dataset[course])[ids.index(i)],backId.id])
+        
         x = pd.Series(list(dataset[course]))
         y = pd.Series(background)
-        return x.corr(y)
+        return {
+            'correlation_result':x.corr(y),
+            'marks_factors':marksDict
+        }
 
     if(factor == '2'):  # disability choice
         for i in ids:
             student = Student.objects.get(id=i)
             disability.append(int(student.healthStatus))
+            marksDict.append([list(dataset[course])[ids.index(i)],int(student.healthStatus)])
+        
         x = pd.Series(list(dataset[course]))
         y = pd.Series(disability)
-        return x.corr(y)
+        return {
+            'correlation_result':x.corr(y),
+            'marks_factors':marksDict
+        }
 
     if(factor == '3'):  # gender choice
+        
         for i in ids:
             student = Student.objects.get(id=i)
             gender.append(int(student.gender))
-        print(gender)
+            print(list(dataset[course])[ids.index(i)])
+            marksDict.append([list(dataset[course])[ids.index(i)],int(student.gender)])
+        
         x = pd.Series(list(dataset[course]))
         y = pd.Series(gender)
-        return x.corr(y)
+        return {
+            'correlation_result':x.corr(y),
+            'marks_factors':marksDict
+        }
 
     if(factor == '4'):  # program choice
         for i in ids:
             student = Student.objects.get(id=i)
             program.append(int(student.program))
+            marksDict.append([list(dataset[course])[ids.index(i)],int(student.program)])
+        
         x = pd.Series(list(dataset[course]))
         y = pd.Series(program)
-        return x.corr(y)
+        return {
+            'correlation_result':x.corr(y),
+            'marks_factors':marksDict
+        }
 
 
 def OverviewAnalysis(file):
@@ -159,9 +185,9 @@ def genderHistoAnalysis(file):
         for i in ids:
             student = Student.objects.get(id=i)
             if(student.gender == '1'):
-                male.append(marks[i-1])
+                male.append(list(dataset[j])[ids.index(i)])
             if(student.gender == '2'):
-                female.append(marks[i-1])
+                female.append(list(dataset[j])[ids.index(i)])
         course_data['male'] = statistics.mean(male)
         course_data['female'] = statistics.mean(female)
         course_marks[j] = course_data
@@ -211,11 +237,11 @@ def healthHistoAnalysis(file):
         for i in ids:
             student = Student.objects.get(id=i)
             if(student.healthStatus == '1'):
-                normal.append(marks[i-1])
+                normal.append(list(dataset[j])[ids.index(i)])
             if(student.healthStatus == '2'):
-                chronic_disease.append(marks[i-1])
+                chronic_disease.append(list(dataset[j])[ids.index(i)])
             if(student.healthStatus == '3'):
-                disability.append(marks[i-1])
+                disability.append(list(dataset[j])[ids.index(i)])
         course_data['normal'] = statistics.mean(normal)
         course_data['chronic_disease'] = statistics.mean(chronic_disease)
         course_data['disability'] = statistics.mean(disability)

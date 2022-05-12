@@ -61,6 +61,7 @@ class UserView(APIView):
         user = request.user
         return Response({
             'username': user.fullname,
+            'role':user.role,
         })
 
     def post(self, request):
@@ -109,7 +110,7 @@ def correlationResult(request, pk):
     file = File.objects.get(id=pk)
     course = request.data['course']
     factor = request.data['factor']
-    return Response(data=normal_correlation(file.Actual_file, course, factor), status=HTTP_200_OK)
+    return JsonResponse(normal_correlation(file.Actual_file, course, factor), status=200)
 
 
 class ListStudentsAPIView(ListAPIView):

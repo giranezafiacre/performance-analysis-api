@@ -61,11 +61,11 @@ class User(AbstractBaseUser):
     staff = models.BooleanField(default=False)  # a admin user; non super-user
     admin = models.BooleanField(default=False)  # a superuser
     approved = models.BooleanField(default=False)
-    # role_select=(
-    #     ('1', 'registrar'),
-    #     ('2', 'faculty'),
-    # )
-    # role = models.CharField(max_length=25, choices=role_select,blank=True,null=True)
+    role_select=(
+        ('1', 'registrar'),
+        ('2', 'faculty'),
+    )
+    role = models.CharField(max_length=25, choices=role_select,blank=True,null=True)
 
     # notice the absence of a "Password field", that is built in.
 
