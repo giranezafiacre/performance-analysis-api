@@ -35,7 +35,10 @@ class UserAdmin(BaseUserAdmin):
 
 admin.site.register(User, UserAdmin)
 admin.site.register(File)
-admin.site.register(Student)
+
+class StudAdmin(admin.ModelAdmin):
+    list_display = ('id', 'fname','gender')
+admin.site.register(Student, StudAdmin)
 
 class BackgAdmin(admin.ModelAdmin):
     list_display = ('id','major', 'school')

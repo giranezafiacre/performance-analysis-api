@@ -110,7 +110,7 @@ def correlationResult(request, pk):
     file = File.objects.get(id=pk)
     course = request.data['course']
     factor = request.data['factor']
-    return JsonResponse(normal_correlation(file.Actual_file, course, factor), status=200)
+    return Response(normal_correlation(file.Actual_file, course, factor), status=HTTP_200_OK)
 
 
 class ListStudentsAPIView(ListAPIView):
