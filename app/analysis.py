@@ -57,26 +57,10 @@ def normal_correlation(file, course, factor):
     
     marksArray=[]
     if(factor == '0'):  # teachers choice
-        # for i in ids:
-        #     teacherDict={}
-        #     student = Student.objects.get(id=i)
-        #     backId = student.backId
-        #     print(backId)
-        #     background.append(backId.id)
-        #     backDict['y']=list(dataset[course])[ids.index(i)]
-        #     backDict['x']=f'{backId.major} {backId.school}'
-        #     marksArray.append(backDict)
-            
-        # x = pd.Series(list(dataset[course]))
-        # y = pd.Series(background)
-        # print(marksArray)
-        # return {
-        #     'correlation_result':x.corr(y),
-        #     'marks_factors':marksArray
-        # }
+        
 
         for i in ids:
-            teacherDict={}
+            teacherDict=[]
             courseId = Course.objects.filter(name=course)[0]
             print('courseId:',courseId)
             teacher = Registration.objects.filter(
@@ -86,15 +70,16 @@ def normal_correlation(file, course, factor):
             # teacherId = coursegroup.teacher
             # teacher = Teacher.objects.get(id=teacherId)
             
-            teacherDict['y']=list(dataset[course])[ids.index(i)]
-            teacherDict['x']=f'{teacher}'
+            teacherDict.append(f'{teacher},{teacher.id}')
+            teacherDict.append(list(dataset[course])[ids.index(i)])
             teachers.append(teacher.id)
             marksArray.append(teacherDict)
         
+        print(marksArray)
         x = pd.Series(list(dataset[course]))
         y = pd.Series(teachers)
         print(list(dataset[course]))
-        print(teachers)
+        
         return {
             'correlation_result':x.corr(y),
             'marks_factors':marksArray
@@ -103,13 +88,13 @@ def normal_correlation(file, course, factor):
     if(factor == '1'):  # backgrounds choice
         
         for i in ids:
-            backDict={}
+            backDict=[]
             student = Student.objects.get(id=i)
             backId = student.backId
             print(backId)
             background.append(backId.id)
-            backDict['y']=list(dataset[course])[ids.index(i)]
-            backDict['x']=f'{backId.major} {backId.school}'
+            backDict.append(f'{backId.major} {backId.school},{backId.id}')
+            backDict.append(list(dataset[course])[ids.index(i)])
             marksArray.append(backDict)
             
         x = pd.Series(list(dataset[course]))
@@ -122,19 +107,19 @@ def normal_correlation(file, course, factor):
 
     if(factor == '2'):  # disability choice
         for i in ids:
-            disDict={}
+            disDict=[]
             student = Student.objects.get(id=i)
             disability.append(int(student.healthStatus))
             status=''
             print(int(student.healthStatus))
             if(int(student.healthStatus)==1):
                status='normal'
-            elif (int(student.healthStatus)==2):
+            if (int(student.healthStatus)==2):
                status='chronic_disease'
             if(int(student.healthStatus)==3):
                status='disability'
-            disDict['y']=list(dataset[course])[ids.index(i)]
-            disDict['x']=f'{status}'
+            disDict.append(f'{status},{student.healthStatus}')
+            disDict.append(list(dataset[course])[ids.index(i)])
             
             marksArray.append(disDict)
         x = pd.Series(list(dataset[course]))
@@ -147,17 +132,17 @@ def normal_correlation(file, course, factor):
 
     if(factor == '3'):  # gender choice
         for i in ids:
-            gendDict={}
+            gendDict=[]
             student = Student.objects.get(id=i)
             gender.append(int(student.gender))
             print(list(dataset[course])[ids.index(i)])
             gendStr=''
             if(student.gender=='1'):
-                gendStr='male b'
+                gendStr='male'
             if(student.gender=='2'):
-                gendStr='female k'
-            gendDict['y']=list(dataset[course])[ids.index(i)]
-            gendDict['x']=gendStr
+                gendStr='female'
+            gendDict.append(f'{gendStr},{student.gender}')
+            gendDict.append(list(dataset[course])[ids.index(i)])
             marksArray.append(gendDict)
         x = pd.Series(list(dataset[course]))
         y = pd.Series(gender)
@@ -170,9 +155,14 @@ def normal_correlation(file, course, factor):
     if(factor == '4'):  # program choice
         for i in ids:
             student = Student.objects.get(id=i)
+            progStr=''
+            if(student.program=='1'):
+                progStr='day'
+            if(student.program=='2'):
+                progStr='evening'
             program.append(int(student.program))
-            marksArray.append([list(dataset[course])[ids.index(i)],int(student.program)])
-        
+            marksArray.append([f'{progStr},{int(student.program)}',list(dataset[course])[ids.index(i)]])
+        print(marksArray)
         x = pd.Series(list(dataset[course]))
         y = pd.Series(program)
         return {
