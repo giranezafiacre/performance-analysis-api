@@ -109,11 +109,11 @@ class File(models.Model):
     File_name = models.CharField(
         max_length=100, help_text='enter file name', unique=True)
     Actual_file = models.FileField(
-        upload_to='app/uploads/', help_text='upload file in csv format')
+        upload_to='uploads', help_text='upload file in csv format')
 
     def __str__(self):
         """String for representing the Model object."""
-        return self.Actual_file
+        return f'{self.Actual_file}'
 
     def get_absolute_url(self):
         """Returns the url to access a detail record for this book."""
