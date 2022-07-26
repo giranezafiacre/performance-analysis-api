@@ -37,7 +37,7 @@ admin.site.register(User, UserAdmin)
 admin.site.register(File)
 
 class StudAdmin(admin.ModelAdmin):
-    list_display = ('id', 'fname','gender')
+    list_display = ('id', 'fname','gender','healthStatus')
 admin.site.register(Student, StudAdmin)
 
 class BackgAdmin(admin.ModelAdmin):

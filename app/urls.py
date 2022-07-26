@@ -15,4 +15,5 @@ path('latest/',views.reportLatestFileOverview,name='latest'),
 path('gender-histogram/',views.genderHistogram,name='gender-histogram'),
 path('teacher-histogram/',views.teacherHistogram,name='teacher-histogram'),
 path('health-histogram/',views.healthHistogram,name='health-histogram'),
+path('report-file/<int:pk>/',views.reportFile,name='report-file'),
 ]

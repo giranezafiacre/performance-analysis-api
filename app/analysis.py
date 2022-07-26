@@ -1,3 +1,5 @@
+from asyncio.windows_events import NULL
+from math import isnan, nan
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy
@@ -54,120 +56,266 @@ def normal_correlation(file, course, factor):
     program = []
     dataset = pd.read_csv(file)
     ids = list(dataset['Id'])
-    
-    marksArray=[]
-    if(factor == '0'):  # teachers choice
-        
+    marksArray = []
 
-        for i in ids:
-            teacherDict=[]
-            courseId = Course.objects.filter(name=course)[0]
-            print('courseId:',courseId)
-            teacher = Registration.objects.filter(
-                student=Student.objects.get(id=i), courseGroup__course=courseId)[0].courseGroup.teacher
-            # chosencoursegroup = registration.courseGroup
-            # coursegroup = CourseGroup.objects.get(id=chosencoursegroup.id)
-            # teacherId = coursegroup.teacher
-            # teacher = Teacher.objects.get(id=teacherId)
-            
-            teacherDict.append(f'{teacher},{teacher.id}')
-            teacherDict.append(list(dataset[course])[ids.index(i)])
-            teachers.append(teacher.id)
-            marksArray.append(teacherDict)
-        
-        print(marksArray)
+    if(factor == '0'):  # teachers choice
+        courseId = Course.objects.filter(name=course)[0]
+        print('courseId:', courseId)
+        groups = CourseGroup.objects.filter(
+            course=courseId.id)
+        print('groups:', groups)
+        teacherDict = {}
+        TeacherArr = []
+        for group in groups:
+            print('group teacher:', group.teacher)
+            print("_____________")
+            groupArr = []
+            successteacher = 0
+            failedTeacher = 0
+            for i in ids:
+                courseId = Course.objects.filter(name=course)[0]
+                if(Registration.objects.filter(student=Student.objects.get(id=i), courseGroup=group.id)):
+                    teachers.append(group.teacher.id)
+                    groupArr.append(list(dataset[course])[ids.index(i)])
+                    print(i, ':et', group.teacher)
+                    if(list(dataset[course])[ids.index(i)] >= 10):
+                        successteacher = successteacher+1
+                    else:
+                        failedTeacher = failedTeacher + 1
+
+            if(groupArr):
+                teacherDict[f'{group.teacher}'] = statistics.mean(groupArr)
+                teacherData = {}
+                teacherData['name'] = f'{group.teacher}'
+                teacherData['succeeded'] = successteacher
+                teacherData['failed'] = failedTeacher
+                print('teacherName:__', teacherData)
+                TeacherArr.append(teacherData)
+                print('teacherarr:__', TeacherArr)
+
+        print('x:', list(dataset[course]))
+        print('y:', teachers)
         x = pd.Series(list(dataset[course]))
         y = pd.Series(teachers)
-        print(list(dataset[course]))
-        
+        correlation = x.corr(y)
+        if(isnan(correlation)):
+            correlation = -2
+        print('corr:', correlation)
+
         return {
-            'correlation_result':x.corr(y),
-            'marks_factors':marksArray
+            'correlation_result': correlation,
+            'marks_factors': teacherDict,
+            'data': TeacherArr
         }
 
     if(factor == '1'):  # backgrounds choice
-        
-        for i in ids:
-            backDict=[]
-            student = Student.objects.get(id=i)
-            backId = student.backId
-            print(backId)
-            background.append(backId.id)
-            backDict.append(f'{backId.major} {backId.school},{backId.id}')
-            backDict.append(list(dataset[course])[ids.index(i)])
-            marksArray.append(backDict)
-            
+        backgrounds = BackgroundStudy.objects.all()
+        backDict = {}
+        backgroundArr = []
+        backgArr = []
+        for background in backgrounds:
+            backArr = []
+            successBack = 0
+            failedBack = 0
+            for i in ids:
+                student = Student.objects.get(id=i)
+                backId = student.backId
+                if(backId.id == background.id):
+                    backArr.append(list(dataset[course])[ids.index(i)])
+                    if(list(dataset[course])[ids.index(i)] >= 10):
+                        successBack = successBack+1
+                    else:
+                        failedBack = failedBack + 1
+            if(backArr):
+                backDict[f'{background.major} {background.school}'] = statistics.mean(
+                    backArr)
+                backgData = {}
+                backgData['name'] = f'{background.major} {background.school}'
+                backgData['succeeded'] = successBack
+                backgData['failed'] = failedBack
+                backgArr.append(backgData)
+                #
+            backgroundArr.append(background.id)
+        marksArray.append(backDict)
+
         x = pd.Series(list(dataset[course]))
-        y = pd.Series(background)
-        print(marksArray)
+        y = pd.Series(backgroundArr)
+        print('backgArr:', backgArr)
         return {
-            'correlation_result':x.corr(y),
-            'marks_factors':marksArray
+            'correlation_result': x.corr(y),
+            'marks_factors': backDict,
+            'data': backgArr
         }
 
     if(factor == '2'):  # disability choice
+        disDict = {}
+        normalArr = []
+        chronicArr = []
+        disArr = []
+        disabSuccess = 0
+        disabFailed = 0
+        normalSuccess = 0
+        normalFailed = 0
+        chronicSuccess = 0
+        chronicFailed = 0
+        normalDict = {}
+        chronicDict = {}
+        disabDict = {}
         for i in ids:
-            disDict=[]
             student = Student.objects.get(id=i)
             disability.append(int(student.healthStatus))
-            status=''
+            status = ''
             print(int(student.healthStatus))
-            if(int(student.healthStatus)==1):
-               status='normal'
-            if (int(student.healthStatus)==2):
-               status='chronic_disease'
-            if(int(student.healthStatus)==3):
-               status='disability'
-            disDict.append(f'{status},{student.healthStatus}')
-            disDict.append(list(dataset[course])[ids.index(i)])
-            
+            if(int(student.healthStatus) == 1):
+                status = 'normal'
+                normalArr.append(list(dataset[course])[ids.index(i)])
+                if(list(dataset[course])[ids.index(i)] < 10):
+                    normalFailed += 1
+                else:
+                    normalSuccess += 1
+            if (int(student.healthStatus) == 2):
+                status = 'chronic_disease'
+                chronicArr.append(list(dataset[course])[ids.index(i)])
+                if(list(dataset[course])[ids.index(i)] < 10):
+                    chronicFailed += 1
+                else:
+                    chronicSuccess += 1
+            if(int(student.healthStatus) == 3):
+                status = 'disability'
+                disArr.append(list(dataset[course])[ids.index(i)])
+                if(list(dataset[course])[ids.index(i)] < 10):
+                    disabFailed += 1
+                else:
+                    disabSuccess += 1
+
             marksArray.append(disDict)
+        normalDict['name'] = 'normal'
+        normalDict['succeeded'] = normalSuccess
+        normalDict['failed'] = normalFailed
+
+        chronicDict['name'] = 'chronic'
+        chronicDict['succeeded'] = chronicSuccess
+        chronicDict['failed'] = chronicFailed
+
+        disabDict['name'] = 'disabled'
+        disabDict['succeeded'] = disabSuccess
+        disabDict['failed'] = disabFailed
+
+        healthArr = [normalDict, chronicDict, disabDict]
+        disDict['normal'] = statistics.mean(normalArr)
+        disDict['chronic_disease'] = statistics.mean(chronicArr)
+        disDict['disability'] = statistics.mean(disArr)
         x = pd.Series(list(dataset[course]))
         y = pd.Series(disability)
         print(marksArray)
+
         return {
-            'correlation_result':x.corr(y),
-            'marks_factors':marksArray
+            'correlation_result': x.corr(y),
+            'marks_factors': disDict,
+            'data': healthArr
         }
 
     if(factor == '3'):  # gender choice
+        gendDict = {}
+        maleArr = []
+        femaleArr = []
+        maleSuccess = 0
+        maleFailed = 0
+        femaleSuccess = 0
+        femaleFailed = 0
         for i in ids:
-            gendDict=[]
             student = Student.objects.get(id=i)
             gender.append(int(student.gender))
             print(list(dataset[course])[ids.index(i)])
-            gendStr=''
-            if(student.gender=='1'):
-                gendStr='male'
-            if(student.gender=='2'):
-                gendStr='female'
-            gendDict.append(f'{gendStr},{student.gender}')
-            gendDict.append(list(dataset[course])[ids.index(i)])
+            gendStr = ''
+            if(student.gender == '1'):
+                gendStr = 'male'
+                maleArr.append(list(dataset[course])[ids.index(i)])
+                if(list(dataset[course])[ids.index(i)] < 10):
+                    maleFailed += 1
+                else:
+                    maleSuccess += 1
+            if(student.gender == '2'):
+                gendStr = 'female'
+                femaleArr.append(list(dataset[course])[ids.index(i)])
+                if(list(dataset[course])[ids.index(i)] < 10):
+                    femaleFailed += 1
+                else:
+                    femaleSuccess += 1
             marksArray.append(gendDict)
+        maleDict = {}
+        femaleDict = {}
+
+        maleDict['name'] = 'male'
+        maleDict['succeeded'] = maleSuccess
+        maleDict['failed'] = maleFailed
+
+        femaleDict['name'] = 'female'
+        femaleDict['succeeded'] = femaleSuccess
+        femaleDict['failed'] = femaleFailed
+
+        gendDict['male'] = statistics.mean(maleArr)
+        gendDict['female'] = statistics.mean(femaleArr)
         x = pd.Series(list(dataset[course]))
         y = pd.Series(gender)
-        print('correlation:',marksArray)
         return {
-            'correlation_result':x.corr(y),
-            'marks_factors':marksArray
+            'correlation_result': x.corr(y),
+            'marks_factors': gendDict,
+            'data': [maleDict, femaleDict]
         }
 
     if(factor == '4'):  # program choice
+        progDict = {}
+        dayArr = []
+        eveningArr = []
+        daySuccess=0
+        dayFailed=0
+        eveningSuccess=0
+        eveningFailed=0
         for i in ids:
             student = Student.objects.get(id=i)
-            progStr=''
-            if(student.program=='1'):
-                progStr='day'
-            if(student.program=='2'):
-                progStr='evening'
+            progStr = ''
+            if(student.program == '1'):
+                progStr = 'day'
+                dayArr.append(list(dataset[course])[ids.index(i)])
+                if(list(dataset[course])[ids.index(i)] < 10):
+                    dayFailed += 1
+                else:
+                    daySuccess += 1
+            if(student.program == '2'):
+                progStr = 'evening'
+                eveningArr.append(list(dataset[course])[ids.index(i)])
+                if(list(dataset[course])[ids.index(i)] < 10):
+                    eveningFailed += 1
+                else:
+                    eveningSuccess += 1
             program.append(int(student.program))
-            marksArray.append([f'{progStr},{int(student.program)}',list(dataset[course])[ids.index(i)]])
+            marksArray.append(
+                [f'{progStr},{int(student.program)}', list(dataset[course])[ids.index(i)]])
         print(marksArray)
+        dayDict={}
+        eveningDict={}
+        
+        dayDict['name'] = 'day'
+        dayDict['succeeded'] = daySuccess
+        dayDict['failed'] = dayFailed
+
+        eveningDict['name'] = 'evening'
+        eveningDict['succeeded'] = eveningSuccess
+        eveningDict['failed'] = eveningFailed
+        
+        progDict['day'] = statistics.mean(dayArr)
+        progDict['evening'] = statistics.mean(eveningArr)
         x = pd.Series(list(dataset[course]))
         y = pd.Series(program)
+        correlation = x.corr(y)
+        if(isnan(correlation)):
+            correlation = -2
+
         return {
-            'correlation_result':x.corr(y),
-            'marks_factors':marksArray
+            'correlation_result': correlation,
+            'marks_factors': progDict,
+            'data':[dayDict,eveningDict]
         }
 
 
@@ -287,3 +435,103 @@ def healthHistoAnalysis(file):
         course_marks[j] = course_data
         health_data.append(course_marks)
     return health_data
+
+
+def reportFileAnalysis(file):
+    dataset = pd.read_csv(file)
+    ids = list(dataset['Id'])
+    degree_counts = dataset.columns.value_counts()
+    courses = list(degree_counts.keys())
+    courses.pop(courses.index('Id'))
+    reportDict = {}
+    for course in courses:
+        courseDict = {}
+        allSuccess = 0
+        allFailed = 0
+        maleSuccess = 0
+        maleFailed = 0
+        femaleSuccess = 0
+        femaleFailed = 0
+        normalSuccess = 0
+        normalFailed = 0
+        chronicSuccess = 0
+        chronicFailed = 0
+        disabSuccess = 0
+        disabFailed = 0
+        allMean = []
+        maleMean = []
+        femaleMean = []
+        normalMean = []
+        chronicMean = []
+        disabMean = []
+        for i in ids:
+            student = Student.objects.get(id=i)
+            # all
+            allMean.append(list(dataset[course])[ids.index(i)])
+            if(list(dataset[course])[ids.index(i)] >= 10):
+                allSuccess += 1
+            if(list(dataset[course])[ids.index(i)] < 10):
+                allFailed += 1
+
+                # male
+            if(student.gender == '1'):
+                maleMean.append(list(dataset[course])[ids.index(i)])
+                if(list(dataset[course])[ids.index(i)] >= 10):
+                    maleSuccess += 1
+                if(list(dataset[course])[ids.index(i)] < 10):
+                    maleFailed += 1
+
+                    # female
+            if(student.gender == '2'):
+                femaleMean.append(list(dataset[course])[ids.index(i)])
+                if(list(dataset[course])[ids.index(i)] >= 10):
+                    femaleSuccess += 1
+                if(list(dataset[course])[ids.index(i)] < 10):
+                    femaleFailed += 1
+
+                    # normal
+            if(student.healthStatus == '1'):
+                normalMean.append(list(dataset[course])[ids.index(i)])
+                if(list(dataset[course])[ids.index(i)] >= 10):
+                    normalSuccess += 1
+                if(list(dataset[course])[ids.index(i)] < 10):
+                    normalFailed += 1
+
+                    # chronic diseases
+            if(student.healthStatus == '2'):
+                print('chronic:', student.fname, ':', chronicSuccess)
+                chronicMean.append(list(dataset[course])[ids.index(i)])
+                if(list(dataset[course])[ids.index(i)] >= 10):
+                    chronicSuccess = chronicSuccess + 1
+                if(list(dataset[course])[ids.index(i)] < 10):
+                    chronicFailed += 1
+
+                    # disabilities
+            if(student.healthStatus == '3'):
+                disabMean.append(list(dataset[course])[ids.index(i)])
+                if(list(dataset[course])[ids.index(i)] >= 10):
+                    disabSuccess += 1
+                if(list(dataset[course])[ids.index(i)] < 10):
+                    disabFailed += 1
+        courseDict['allSuccess'] = allSuccess
+        courseDict['allFailed'] = allFailed
+        courseDict['femaleSuccess'] = femaleSuccess
+        courseDict['femaleFailed'] = femaleFailed
+        courseDict['maleSuccess'] = maleSuccess
+        courseDict['maleFailed'] = maleFailed
+        courseDict['normalSuccess'] = normalSuccess
+        courseDict['normalFailed'] = normalFailed
+        courseDict['chronicSuccess'] = chronicSuccess
+        courseDict['chronicFailed'] = chronicFailed
+        courseDict['disabSuccess'] = disabSuccess
+        courseDict['disabFailed'] = disabFailed
+        courseDict['allMean'] = "{:.2f}".format(statistics.mean(allMean))
+        courseDict['maleMean'] = "{:.2f}".format(statistics.mean(maleMean))
+        courseDict['femaleMean'] = "{:.2f}".format(statistics.mean(femaleMean))
+        courseDict['normalMean'] = "{:.2f}".format(statistics.mean(normalMean))
+        courseDict['chronicMean'] = "{:.2f}".format(
+            statistics.mean(chronicMean))
+        courseDict['disabMean'] = "{:.2f}".format(statistics.mean(disabMean))
+        reportDict[course] = courseDict
+    print(reportDict)
+    return reportDict

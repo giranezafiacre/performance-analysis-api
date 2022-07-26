@@ -19,7 +19,7 @@ from app.serializers import FileSerializer, ListSerializer, StudentSerializer, U
 from django.contrib.auth import authenticate, login
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
-from .analysis import OverviewAnalysis, genderHistoAnalysis, fileDetails, healthHistoAnalysis, normal_correlation, teacherHistoAnalysis
+from .analysis import OverviewAnalysis, genderHistoAnalysis, fileDetails, healthHistoAnalysis, normal_correlation, reportFileAnalysis, teacherHistoAnalysis
 from .models import *
 import jwt
 
@@ -138,3 +138,7 @@ def healthHistogram(request):
     lastFile = File.objects.all().last()
     data=healthHistoAnalysis(lastFile.Actual_file)
     return JsonResponse({'data':data}, status=200)
+
+def reportFile(request, pk):
+    file = File.objects.get(id=pk)
+    return JsonResponse({'report':reportFileAnalysis(file.Actual_file)}, status=200)
